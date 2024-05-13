@@ -13,6 +13,8 @@
 // Also, creating a pub struct that wraps these two allows us to keep the other two
 // private.
 
+use std::mem;
+
 // struct w single field -> zero cost abstraction!
 #[derive(Debug)]
 pub struct List<T> {
@@ -38,7 +40,8 @@ enum Link<T> {
 }
 
 impl<T> List<T> {
-    pub fn new() -> Self {
+    #[must_use] // linter error if invoked without binding return value
+    pub const fn new() -> Self {
         Self { head: Link::Nil }
     }
 
@@ -50,10 +53,34 @@ impl<T> List<T> {
             // Luckily, we can access self.head via a cheeky mem::replace, which does not leave
             // self.head invalidated. We'll give self.head a dummy ptr for now, then reassign it
             // below.
-            next: std::mem::replace(&mut self.head, Link::Nil),
+            next: mem::replace(&mut self.head, Link::Nil),
         };
 
         self.head = Link::Cons(Box::new(new_node));
+    }
+
+    pub fn pop_front(&mut self) -> Option<T> {
+        // We cannot `match self.head` because the arm Link::Cons(node) attempts to move a node out
+        // of self, which is an illegal mutate since we have a mutable ref to self.
+        //
+        // Trying to `match &self.head` -> we cannot reassign self.head inside the match expr since
+        // we're matching against an immutable ref.
+        //
+        // We CAN do another cheeky mem::replace to acquire self.head by value without invalidating
+        // self.head as a ptr!
+        match mem::replace(&mut self.head, Link::Nil) {
+            Link::Nil => None,
+            Link::Cons(node) => {
+                self.head = node.next;
+                Some(node.value)
+            },
+        }
+    }
+}
+
+impl<T> Default for List<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
