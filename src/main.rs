@@ -46,6 +46,14 @@ impl<T> List<T> {
             boxed_node.value
         })
     }
+
+    pub fn peek(&self) -> Option<&T> {
+        // Option::map() wants to eat our self by value, which would move the Option out from under
+        // it. We don't want to move anything; we just want a peek!
+        // Option::as_ref() is the answer, which returns Option<&T> instead of Option<T>. Still a
+        // little confused about this.
+        self.head.as_ref().map(|boxed_node| &boxed_node.value)
+    }
 }
 
 impl<T> Default for List<T> {
@@ -87,5 +95,17 @@ mod tests {
         assert_eq!(list.pop_front(), Some(8));
         assert_eq!(list.pop_front(), Some(7));
         assert_eq!(list.pop_front(), None);
+    }
+
+    #[test]
+    fn peekaboo() {
+        let mut list: List<i32> = List::new();
+        list.push_front(5);
+        list.push_front(2);
+        assert_eq!(list.peek(), Some(&2));
+        assert_eq!(list.pop_front(), Some(2));
+        assert_eq!(list.peek(), Some(&5));
+        assert_eq!(list.pop_front(), Some(5));
+        assert_eq!(list.peek(), None);
     }
 }
