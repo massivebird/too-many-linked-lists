@@ -37,4 +37,24 @@ enum Link<T> {
     Cons(Box<Node<T>>),
 }
 
+impl<T> List<T> {
+    pub fn new() -> Self {
+        Self { head: Link::Nil }
+    }
+
+    pub fn push_front(&mut self, new_value: T) {
+        let new_node = Node {
+            value: new_value,
+            // We can't just assign next to self.head — that would move the pointer out of
+            // self.head, thus invalidating it, and Rust ain't letting that happen, even for a moment.
+            // Luckily, we can access self.head via a cheeky mem::replace, which does not leave
+            // self.head invalidated. We'll give self.head a dummy ptr for now, then reassign it
+            // below.
+            next: std::mem::replace(&mut self.head, Link::Nil),
+        };
+
+        self.head = Link::Cons(Box::new(new_node));
+    }
+}
+
 fn main() {}
