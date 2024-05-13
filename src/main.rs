@@ -84,6 +84,18 @@ impl<T> Default for List<T> {
     }
 }
 
+// Default Drop isn't fully tail recursive! Namely, Box<Node> must drop its Node before
+// deallocating itself.
+// To fix this, we change all links in the list to Nil to avoid recursive drops.
+impl<T> Drop for List<T> {
+    fn drop(&mut self) {
+        let mut current_link = mem::replace(&mut self.head, Link::Nil);
+        while let Link::Cons(mut boxed_node) = current_link {
+            current_link = mem::replace(&mut boxed_node.next, Link::Nil)
+        }
+    }
+}
+
 fn main() {}
 
 #[cfg(test)]
