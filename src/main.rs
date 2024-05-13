@@ -41,13 +41,10 @@ impl<T> List<T> {
         //
         // We CAN do another cheeky Option::take() to acquire self.head by value without invalidating
         // self.head as a ptr!
-        match self.head.take() {
-            Link::None => None,
-            Link::Some(node) => {
-                self.head = node.next;
-                Some(node.value)
-            },
-        }
+        self.head.take().map(|boxed_node| {
+            self.head = boxed_node.next;
+            boxed_node.value
+        })
     }
 }
 
