@@ -74,6 +74,25 @@ impl<T> Drop for List<T> {
     }
 }
 
+// Tuple struct!
+// We'll implement Iterator over this struct, which will consume the original list (moving it into
+// an IntoIter instance), then "iterate" over its elements by consuming each one.
+pub struct IntoIter<T>(List<T>);
+
+impl<T> List<T> {
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter(self)
+    }
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop_front()
+    }
+}
+
 fn main() {}
 
 #[cfg(test)]
@@ -107,5 +126,16 @@ mod tests {
         assert_eq!(list.peek(), Some(&5));
         assert_eq!(list.pop_front(), Some(5));
         assert_eq!(list.peek(), None);
+    }
+
+    #[test]
+    fn into_itering() {
+        let mut list: List<i32> = List::new();
+        list.push_front(5);
+        list.push_front(2);
+        let mut lil_iter = list.into_iter();
+        assert_eq!(lil_iter.next(), Some(2));
+        assert_eq!(lil_iter.next(), Some(5));
+        assert_eq!(lil_iter.next(), None);
     }
 }
