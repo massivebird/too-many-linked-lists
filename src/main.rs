@@ -93,14 +93,43 @@ impl<T> Iterator for IntoIter<T> {
     }
 }
 
+pub struct IterMut<'a, T> {
+    next: Option<&'a mut Node<T>>,
+}
+
+impl<T> List<T> {
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        // still unsure as to what as_deref is doing here.
+        IterMut {
+            next: self.head.as_deref_mut(),
+        }
+    }
+}
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // must take() before map() because &mut doesn't implement Copy, so map() is yoinking
+        // self.next! This is just like our earlier problems solved via mem::replace.
+        self.next.take().map(|node| {
+            // still unsure as to what as_deref is doing here.
+            self.next = node.next.as_deref_mut();
+            &mut node.value
+        })
+    }
+}
+
 pub struct Iter<'a, T> {
-    next: Option<&'a Node<T>>
+    next: Option<&'a Node<T>>,
 }
 
 impl<T> List<T> {
     pub fn iter(&self) -> Iter<T> {
         // still unsure as to what as_deref is doing here.
-        Iter { next: self.head.as_deref() }
+        Iter {
+            next: self.head.as_deref(),
+        }
     }
 }
 
@@ -159,6 +188,25 @@ mod tests {
         let mut lil_iter = list.into_iter();
         assert_eq!(lil_iter.next(), Some(2));
         assert_eq!(lil_iter.next(), Some(5));
+        assert_eq!(lil_iter.next(), None);
+    }
+
+    #[test]
+    fn mut_itering() {
+        let mut list: List<i32> = List::new();
+        list.push_front(5);
+        list.push_front(2);
+
+        let mut mut_iter = list.iter_mut();
+
+        // mutates each node, multiplies each value by 10
+        while let Some(mptr) = mut_iter.next() {
+            *mptr = *mptr * 10;
+        }
+
+        let mut lil_iter = list.into_iter();
+        assert_eq!(lil_iter.next(), Some(20));
+        assert_eq!(lil_iter.next(), Some(50));
         assert_eq!(lil_iter.next(), None);
     }
 }
