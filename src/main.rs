@@ -85,3 +85,25 @@ impl<T> Default for List<T> {
 }
 
 fn main() {}
+
+#[cfg(test)]
+mod tests {
+    use super::List;
+
+    #[test]
+    fn pushing_pulling() {
+        let mut list: List<i32> = List::new();
+        list.push_front(5);
+        list.push_front(2);
+        assert_eq!(list.pop_front(), Some(2));
+        assert_eq!(list.pop_front(), Some(5));
+        assert_eq!(list.pop_front(), None);
+        list.push_front(7);
+        list.push_front(8);
+        list.push_front(13);
+        assert_eq!(list.pop_front(), Some(13));
+        assert_eq!(list.pop_front(), Some(8));
+        assert_eq!(list.pop_front(), Some(7));
+        assert_eq!(list.pop_front(), None);
+    }
+}
