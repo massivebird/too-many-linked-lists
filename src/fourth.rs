@@ -15,6 +15,7 @@ struct Node<T> {
 }
 
 impl<T> List<T> {
+    #[must_use]
     const fn new() -> Self {
         Self {
             head: None,
@@ -55,6 +56,7 @@ impl<T> List<T> {
 }
 
 impl<T> Node<T> {
+    #[must_use]
     fn new(elem: T) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Self {
             elem,
