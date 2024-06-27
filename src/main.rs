@@ -17,6 +17,8 @@ impl<T> List<T> {
         Self { head: Link::None }
     }
 
+    /// Prepends an element to the existing list.
+    /// I think this is synonymous with a `push_front`.
     #[must_use]
     pub fn prepend(&self, elem: T) -> Self {
         Self {
@@ -40,10 +42,13 @@ impl<T> List<T> {
     }
 }
 
+// We're self-implementing Drop since we have lots of Box<Node>, which does NOT
+// drop using tail recursion; each drop will create a new stack frame.
 impl<T> Drop for List<T> {
     fn drop(&mut self) {
         let mut head = self.head.take();
         while let Some(node) = head {
+            // drop nodes until there is one owned by another list
             if let Ok(mut node) = Rc::try_unwrap(node) {
                 head = node.next.take();
             } else {
