@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
 type Link<T> = Option<Rc<RefCell<Node<T>>>>;
@@ -52,6 +52,17 @@ impl<T> List<T> {
             }
             Rc::try_unwrap(old_head).ok().unwrap().into_inner().elem
         })
+    }
+
+    fn peek_front(&self) -> Option<Ref<T>> {
+        // Returning Option<T> would be SO HARD with RefCells. RefCells produce
+        // Ref[Mut]<'_, T>, which helps enforce runtime reference validation.
+        // We can't access T without going through a Ref first.
+        self.head
+            .as_ref()
+            // Our type is RefCell<Node<T>> — we don't want the Node part!
+            // Ref::map allows us to convert Ref<T> -> Ref<F>.
+            .map(|node| Ref::map(node.borrow(), |node| &node.elem))
     }
 }
 
