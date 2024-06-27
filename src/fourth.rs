@@ -55,6 +55,13 @@ impl<T> List<T> {
     }
 }
 
+// We must self-implement drop to avoid reference cycles.
+impl<T> Drop for List<T> {
+    fn drop(&mut self) {
+        while self.pop_front().is_some() {}
+    }
+}
+
 impl<T> Node<T> {
     #[must_use]
     fn new(elem: T) -> Rc<RefCell<Self>> {
