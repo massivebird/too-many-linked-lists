@@ -204,4 +204,22 @@ mod test {
         assert_eq!(*list.peek_front().unwrap(), 2);
         assert_eq!(*list.peek_back().unwrap(), 5);
     }
+
+    #[test]
+    fn peek_mut() {
+        let mut list = List::new();
+        assert!(list.peek_front().is_none());
+
+        list.push_front(3);
+        list.push_front(2);
+
+        assert_eq!(*list.peek_front().unwrap(), 2);
+        assert_eq!(*list.peek_back().unwrap(), 3);
+
+        *list.peek_front_mut().unwrap() = 10;
+        *list.peek_back_mut().unwrap() = 5;
+
+        assert_eq!(*list.peek_front().unwrap(), 10);
+        assert_eq!(*list.peek_back().unwrap(), 5);
+    }
 }
