@@ -1,4 +1,4 @@
-use std::cell::{Ref, RefCell};
+use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
 type Link<T> = Option<Rc<RefCell<Node<T>>>>;
@@ -96,15 +96,22 @@ impl<T> List<T> {
             .map(|node| Ref::map(node.borrow(), |node| &node.elem))
     }
 
+    fn peek_front_mut(&self) -> Option<RefMut<T>> {
+        self.head
+            .as_ref()
+            .map(|node| RefMut::map(node.borrow_mut(), |node| &mut node.elem))
+    }
+
     fn peek_back(&self) -> Option<Ref<T>> {
-        // Returning Option<T> would be SO HARD with RefCells. RefCells produce
-        // Ref[Mut]<'_, T>, which helps enforce runtime reference validation.
-        // We can't access T without going through a Ref first.
         self.tail
             .as_ref()
-            // Our type is RefCell<Node<T>> — we don't want the Node part!
-            // Ref::map allows us to convert Ref<T> -> Ref<F>.
             .map(|node| Ref::map(node.borrow(), |node| &node.elem))
+    }
+
+    fn peek_back_mut(&self) -> Option<RefMut<T>> {
+        self.tail
+            .as_ref()
+            .map(|node| RefMut::map(node.borrow_mut(), |node| &mut node.elem))
     }
 }
 
