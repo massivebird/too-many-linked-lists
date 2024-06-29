@@ -78,7 +78,7 @@ impl<T> List<T> {
                 }
                 None => {
                     // list is emptied after this pop
-                    self.tail.take();
+                    self.head.take();
                 }
             }
             Rc::try_unwrap(old_tail).ok().unwrap().into_inner().elem
@@ -112,6 +112,27 @@ impl<T> List<T> {
         self.tail
             .as_ref()
             .map(|node| RefMut::map(node.borrow_mut(), |node| &mut node.elem))
+    }
+
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter(self)
+    }
+}
+
+pub struct IntoIter<T>(List<T>);
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop_front()
+    }
+}
+
+// Inherits from Iterator (all DEIs are Iterators), also exposes the rev method
+impl<T> DoubleEndedIterator for IntoIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.pop_back()
     }
 }
 
@@ -221,5 +242,22 @@ mod test {
 
         assert_eq!(*list.peek_front().unwrap(), 10);
         assert_eq!(*list.peek_back().unwrap(), 5);
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut list = List::new();
+        assert!(list.peek_front().is_none());
+
+        list.push_front(1);
+        list.push_front(2);
+        list.push_front(3);
+
+        let mut it = list.into_iter();
+
+        assert_eq!(it.next(), Some(3));
+        assert_eq!(it.next_back(), Some(1));
+        assert_eq!(it.next_back(), Some(2));
+        assert_eq!(it.next(), None);
     }
 }
