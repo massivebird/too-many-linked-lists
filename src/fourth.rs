@@ -95,6 +95,17 @@ impl<T> List<T> {
             // Ref::map allows us to convert Ref<T> -> Ref<F>.
             .map(|node| Ref::map(node.borrow(), |node| &node.elem))
     }
+
+    fn peek_back(&self) -> Option<Ref<T>> {
+        // Returning Option<T> would be SO HARD with RefCells. RefCells produce
+        // Ref[Mut]<'_, T>, which helps enforce runtime reference validation.
+        // We can't access T without going through a Ref first.
+        self.tail
+            .as_ref()
+            // Our type is RefCell<Node<T>> — we don't want the Node part!
+            // Ref::map allows us to convert Ref<T> -> Ref<F>.
+            .map(|node| Ref::map(node.borrow(), |node| &node.elem))
+    }
 }
 
 // We must self-implement drop to avoid reference cycles.
