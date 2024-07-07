@@ -73,7 +73,7 @@ impl<T> List<T> {
             Link::Cons(node) => {
                 self.head = node.next;
                 Some(node.value)
-            },
+            }
         }
     }
 }
