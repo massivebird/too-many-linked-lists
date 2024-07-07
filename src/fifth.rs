@@ -83,26 +83,139 @@ impl<T> Drop for List<T> {
     }
 }
 
+pub struct IntoIter<T>(List<T>);
+
+pub struct Iter<'a, T> {
+    next: Option<&'a Node<T>>,
+}
+
+pub struct IterMut<'a, T> {
+    next: Option<&'a mut Node<T>>,
+}
+
+impl<T> List<T> {
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter(self)
+    }
+
+    pub fn iter(&self) -> Iter<T> {
+        unsafe {
+            Iter {
+                next: self.head.as_ref(),
+            }
+        }
+    }
+
+    pub fn iter_mut(&self) -> IterMut<T> {
+        unsafe {
+            IterMut {
+                next: self.head.as_mut(),
+            }
+        }
+    }
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop()
+    }
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unsafe {
+            self.next.map(|f| {
+                self.next = f.next.as_ref();
+                &f.elem
+            })
+        }
+    }
+}
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unsafe {
+            self.next.take().map(|f| {
+                self.next = f.next.as_mut();
+                &mut f.elem
+            })
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn basics() {
-        let mut list = List::new();
+        let mut queue = List::new();
 
-        list.push(1);
-        list.push(2);
+        queue.push(1);
+        queue.push(2);
 
-        assert_eq!(list.pop(), Some(1));
-        assert_eq!(list.pop(), Some(2));
-        assert_eq!(list.pop(), None);
+        assert_eq!(queue.pop(), Some(1));
+        assert_eq!(queue.pop(), Some(2));
+        assert_eq!(queue.pop(), None);
 
-        list.push(3);
-        list.push(4);
+        queue.push(3);
+        queue.push(4);
 
-        assert_eq!(list.pop(), Some(3));
-        assert_eq!(list.pop(), Some(4));
-        assert_eq!(list.pop(), None);
+        assert_eq!(queue.pop(), Some(3));
+        assert_eq!(queue.pop(), Some(4));
+        assert_eq!(queue.pop(), None);
+    }
+
+    #[test]
+    fn iter() {
+        let mut queue = List::new();
+
+        queue.push(1);
+        queue.push(2);
+
+        let mut iter = queue.iter();
+
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut queue = List::new();
+
+        queue.push(1);
+        queue.push(2);
+
+        let mut iter = queue.into_iter();
+
+        assert_eq!(iter.next(), Some(1));
+        assert_eq!(iter.next(), Some(2));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iter_mut() {
+        let mut queue = List::new();
+
+        queue.push(1);
+        queue.push(2);
+
+        let iter_mut = queue.iter_mut();
+        for elem in iter_mut {
+            *elem *= 10;
+        }
+
+        let mut iter = queue.iter();
+
+        assert_eq!(iter.next(), Some(&10));
+        assert_eq!(iter.next(), Some(&20));
+        assert_eq!(iter.next(), None);
     }
 }
