@@ -25,31 +25,26 @@ impl<T> List<T> {
 
     fn push_front(&mut self, elem: T) {
         let new_head = Node::new(elem);
-        match self.head.take() {
-            Some(old_head) => {
-                self.head = Some(new_head.clone());
-                old_head.borrow_mut().prev = Some(new_head.clone());
-                new_head.borrow_mut().next = Some(old_head);
-            }
-            None => {
-                self.head = Some(new_head.clone());
-                self.tail = Some(new_head);
-            }
+        if let Some(old_head) = self.head.take() {
+            self.head = Some(new_head.clone());
+            old_head.borrow_mut().prev = Some(new_head.clone());
+            new_head.borrow_mut().next = Some(old_head);
+        } else {
+            self.head = Some(new_head.clone());
+            self.tail = Some(new_head);
         }
     }
 
     fn push_back(&mut self, elem: T) {
         let new_tail = Node::new(elem);
-        match self.tail.take() {
-            Some(old_tail) => {
-                self.tail = Some(new_tail.clone());
-                old_tail.borrow_mut().next = Some(new_tail.clone());
-                new_tail.borrow_mut().prev = Some(old_tail);
-            }
-            None => {
-                self.tail = Some(new_tail.clone());
-                self.tail = Some(new_tail);
-            }
+
+        if let Some(old_tail) = self.tail.take() {
+            self.tail = Some(new_tail.clone());
+            old_tail.borrow_mut().next = Some(new_tail.clone());
+            new_tail.borrow_mut().prev = Some(old_tail);
+        } else {
+            self.tail = Some(new_tail.clone());
+            self.tail = Some(new_tail);
         }
     }
 

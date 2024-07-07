@@ -91,7 +91,7 @@ impl<T> Drop for List<T> {
     fn drop(&mut self) {
         let mut current_link = mem::replace(&mut self.head, Link::Nil);
         while let Link::Cons(mut boxed_node) = current_link {
-            current_link = mem::replace(&mut boxed_node.next, Link::Nil)
+            current_link = mem::replace(&mut boxed_node.next, Link::Nil);
         }
     }
 }
