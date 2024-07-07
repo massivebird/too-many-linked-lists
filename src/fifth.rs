@@ -1,62 +1,85 @@
+use std::ptr;
+
 // an OK unsafe queue
 
 // tail is a ptr because if it were a Link, then both it and the head may try to
 // own the same Node. That's no good, and we're tired of the Rc-RefCell
 // solution. We're resorting to unsafety.
+// Also, head is following suit. Mixing ptrs with refs is messy.
 struct List<T> {
     head: Link<T>,
-    tail: *mut Node<T>,
+    tail: Link<T>,
 }
 
-type Link<T> = Option<Box<Node<T>>>;
+type Link<T> = *mut Node<T>;
 
 struct Node<T> {
     elem: T,
     next: Link<T>,
 }
 
+// For our singly-linked queue, we can either:
+//    + Push front and pop back, or
+//    + Push back and pop front.
+// Singly-linked means the back is more important. Popping the back would be
+// messy: you would have to move the tail backwards, which requires a O(n)
+// traversal. Instead, we'll push to the back, which moves the tail forwards
+// at O(1).
 impl<T> List<T> {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
-            head: None,
-            tail: std::ptr::null_mut(), // nullable mut ptr
+            head: ptr::null_mut(), // nullable mut ptr
+            tail: ptr::null_mut(),
         }
     }
 
     // push at the tail
     pub fn push(&mut self, new_elem: T) {
-        let mut new_tail = Box::new(Node {
-            elem: new_elem,
-            next: None,
-        });
+        unsafe {
+            // create a Box and convert it into a raw ptr
+            let new_tail = Box::into_raw(Box::new(Node {
+                elem: new_elem,
+                next: ptr::null_mut(),
+            }));
 
-        // Coercing a reference into a raw ptr!
-        // This raw ptr points to the Box's heap contents.
-        let raw_tail: *mut _ = &mut *new_tail;
-
-        // before updating the list's tail...
-        if self.tail.is_null() {
-            self.head = Some(new_tail);
-        } else {
-            unsafe {
-                (*self.tail).next = Some(new_tail);
+            // before updating the list's tail...
+            if self.tail.is_null() {
+                self.head = new_tail;
+            } else {
+                (*self.tail).next = new_tail;
             }
-        }
 
-        self.tail = raw_tail;
+            self.tail = new_tail;
+        }
     }
 
     // pops front
     pub fn pop(&mut self) -> Option<T> {
-        self.head.take().map(|head| {
-            self.head = head.next;
+        unsafe {
+            if self.head.is_null() {
+                // list is currently empty
+                None
+            } else {
+                // own the current head by turning it into a Box!
+                // This also cleans up the data via the Box drop
+                let old_head = Box::from_raw(self.head);
 
-            if self.head.is_none() {
-                self.tail = std::ptr::null_mut();
+                self.head = old_head.next;
+
+                // list is now emptied
+                if self.head.is_null() {
+                    self.tail = ptr::null_mut();
+                }
+
+                Some(old_head.elem)
             }
+        }
+    }
+}
 
-            head.elem
-        })
+impl<T> Drop for List<T> {
+    fn drop(&mut self) {
+        while self.pop().is_some() {}
     }
 }
 
